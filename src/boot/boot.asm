@@ -74,6 +74,7 @@ load32:
     mov esp, ebp
 
     ; Enable the A20 line
+    ; https://wiki.osdev.org/A20_Line#Fast_A20_Gate
     in al, 0x92
     or al, 2
     out 0x92, al
