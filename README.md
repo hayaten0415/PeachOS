@@ -8,3 +8,9 @@ This project includes code from the following sources:
 
 ## Information Source
 - https://wiki.osdev.org/
+
+
+## Command
+``
+target remote | qemu-system-x86_64 -hda ./os.bin -gdb stdio -S
+``
