@@ -7,74 +7,68 @@ DATA_SEG equ gdt_data - gdt_start
 _start:
     jmp short start
     nop
-
-times 33 db 0
-
+ times 33 db 0
+ 
 start:
     jmp 0:step2
 
-
 step2:
-    cli ; Clear Interrupt
+    cli ; Clear Interrupts
     mov ax, 0x00
     mov ds, ax
     mov es, ax
     mov ss, ax
     mov sp, 0x7c00
-    sti ; Enable Interrupts
+    sti ; Enables Interrupts
 
-load_protected:
+.load_protected:
     cli
     lgdt[gdt_descriptor]
     mov eax, cr0
     or eax, 0x1
     mov cr0, eax
     jmp CODE_SEG:load32
-
+    
 ; GDT
 gdt_start:
 gdt_null:
     dd 0x0
     dd 0x0
-
-; https://wiki.osdev.org/Global_Descriptor_Table#Table
 ; offset 0x8
-gdt_code:       ; CS SHOULD POINT TO THIS
-    dw 0xffff   ; Segment limit frist 0-15 bits
-    dw 0        ; Base first 0-15 bits
-    db 0        ; Base 16-23 bits
-    db 0x9a     ; Access byte
-    db 11001111b    ; High 4 bit flags and the low 4 bit flags
-    db 0        ; Base 24-31 bits
 
+gdt_code:     ; CS SHOULD POINT TO THIS
+    dw 0xffff ; Segment limit first 0-15 bits
+    dw 0      ; Base first 0-15 bits
+    db 0      ; Base 16-23 bits
+    db 0x9a   ; Access byte
+    db 11001111b ; High 4 bit flags and the low 4 bit flags
+    db 0        ; Base 24-31 bits
 ; offset 0x10
-gdt_data:       ; DS, SS, ES, FS, GS
-    dw 0xffff   ; Segment limit first 0-15 bits
-    dw 0        ; Base first 0-15 bits
-    db 0        ; Base 16-23 bits
-    db 0x92     ; Access byte
-    db 11001111b    ; High 4 bit flags and the low 4 bit flags
+gdt_data:      ; DS, SS, ES, FS, GS
+    dw 0xffff ; Segment limit first 0-15 bits
+    dw 0      ; Base first 0-15 bits
+    db 0      ; Base 16-23 bits
+    db 0x92   ; Access byte
+    db 11001111b ; High 4 bit flags and the low 4 bit flags
     db 0        ; Base 24-31 bits
-
 gdt_end:
-
 gdt_descriptor:
-    dw gdt_end - gdt_start - 1
+    dw gdt_end - gdt_start-1
     dd gdt_start
-
+ 
  [BITS 32]
  load32:
     mov eax, 1
     mov ecx, 100
     mov edi, 0x0100000
+    call ata_lba_read
     jmp CODE_SEG:0x0100000
-
 
 ata_lba_read:
     mov ebx, eax, ; Backup the LBA
-    ; Send the highest 8 bit oof the lba to hard disk controller
+    ; Send the highest 8 bits of the lba to hard disk controller
     shr eax, 24
-    or eax, 0xE0 ; Select the master drive
+    or eax, 0xE0 ; Select the  master drive
     mov dx, 0x1F6
     out dx, al
     ; Finished sending the highest 8 bits of the lba
@@ -89,22 +83,23 @@ ata_lba_read:
     mov eax, ebx ; Restore the backup LBA
     mov dx, 0x1F3
     out dx, al
-    ;Finished sending more bits of the LBA
+    ; Finished sending more bits of the LBA
 
+    ; Send more bits of the LBA
     mov dx, 0x1F4
-    mov eax, ebx ; Resotre the backup LBA
+    mov eax, ebx ; Restore the backup LBA
     shr eax, 8
     out dx, al
     ; Finished sending more bits of the LBA
 
-    ; Sendupper 16 bits of the LBA
+    ; Send upper 16 bits of the LBA
     mov dx, 0x1F5
     mov eax, ebx ; Restore the backup LBA
     shr eax, 16
     out dx, al
     ; Finished sending upper 16 bits of the LBA
 
-    mov dx, 0x1F7
+    mov dx, 0x1f7
     mov al, 0x20
     out dx, al
 
@@ -114,7 +109,7 @@ ata_lba_read:
 
 ; Checking if we need to read
 .try_again:
-    mov dx, 0x1f
+    mov dx, 0x1f7
     in al, dx
     test al, 8
     jz .try_again
@@ -128,5 +123,5 @@ ata_lba_read:
     ; End of reading sectors into memory
     ret
 
-times 510 -($-$$) db 0
+times 510-($ - $$) db 0
 dw 0xAA55
